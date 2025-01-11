@@ -16,3 +16,5 @@ langchain
 faiss-cpu
 langchain-community
 tiktoken
+google-api-python-client
+langgraph

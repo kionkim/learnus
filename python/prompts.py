@@ -23,3 +23,17 @@ assistant_prompt = PromptTemplate(
                 답변:
     """,
 )
+
+
+# Prompt 정의
+search_analyze_prompt = PromptTemplate(
+    input_variables=["business_name", "search_results"],
+    template="""
+    다음은 상호명 '{business_name}'에 대한 검색 결과입니다:
+
+    {search_results}
+
+    검색 결과를 기반으로 해당 상호의 업종을 추론하세요. 가능한 경우 단답형으로 업종만 답변하세요.
+    예: "식당", "카페", "의류", "교통" 등. 
+    """
+)

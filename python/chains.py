@@ -1,14 +1,14 @@
 import os, openai
 from openai import OpenAI
-from langchain.chains import SequentialChain, LLMChain
 from langchain.chains.base import Chain
-from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
 from typing import Dict
 from typing import Dict
 from dotenv import load_dotenv
 from chatgpt_ocr import is_pdf_by_signature, encode_image, pdf_to_image, extract_json_from_string
+
+load_dotenv('../.env')
 
 client = OpenAI(api_key=os.getenv("CHATGPT-RECEIPT"))
 

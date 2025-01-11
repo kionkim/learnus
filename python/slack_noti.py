@@ -1,10 +1,14 @@
 import os, requests
 import logging
+from openai import OpenAI
 from pathlib import Path
 from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from chatgpt_ocr import extract_receipt_info
+from chains import OCRChain, CategoryAssistantChain
+from prompts import assistant_prompt
+from langchain.chains import SequentialChain
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -36,13 +40,27 @@ def handle_file_shared(event, say, logger, client):
     file_info = client.files_info(file=file_id)
     file = file_info["file"]
     file_url = file["url_private_download"]
-    file_name = current_path / '../image' / file["name"]
-    if download_file(file_url, file_name):
-        say(f"파일 '{file_name}'을 성공적으로 다운로드했습니다.")
+    image_path = current_path / '../image' / file["name"]
+    if download_file(file_url, image_path):
+        say(f"파일 '{image_path}'을 성공적으로 다운로드했습니다.")
         # langchain으로 정보 처리
-        
-        receipt_info = extract_receipt_info(file_name)
-        # 추출된 정보를 바탕으로 카테고리 판단
+        # OCR 체인
+        ocr_chain = OCRChain()
+        # OpenAI Assistant 체인
+        assistant_chain = CategoryAssistantChain(prompt=assistant_prompt)
+                # SequentialChain 구성
+        sequential_chain = SequentialChain(
+            chains=[ocr_chain, assistant_chain],
+            input_variables=["image_path"],
+            output_variables=["assistant_response"],
+            verbose=True
+        )
+            
+        # 실행
+        result = sequential_chain.invoke({"image_path": image_path})
+        logger.info("\n최종 결과:")
+        logger.info(result['assistant_response'])
+        write_message(result['assistant_response'])
         
     else:
         say(f"파일 다운로드에 실패했습니다.")
