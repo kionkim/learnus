@@ -18,13 +18,6 @@ def is_pdf_by_signature(file_path):
     except Exception as e:
         print(f"오류 발생: {e}")
         return False
-
-# 테스트
-file_path = "../image/taxi.pdf"
-if is_pdf_by_signature(file_path):
-    print(f"{file_path}는 PDF 파일입니다.")
-else:
-    print(f"{file_path}는 PDF 파일이 아닙니다.")
     
     
 def encode_image(image_path):
