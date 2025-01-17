@@ -6,11 +6,11 @@ from langchain.prompts import PromptTemplate
 from typing import Dict
 from typing import Dict
 from dotenv import load_dotenv
-from chatgpt_ocr import is_pdf_by_signature, encode_image, pdf_to_image, extract_json_from_string
+from utils import is_pdf_by_signature, encode_image, pdf_to_image, extract_json_from_string
 
 load_dotenv('../.env')
 
-client = OpenAI(api_key=os.getenv("CHATGPT-RECEIPT"))
+client = OpenAI(api_key=os.getenv("OPEN-AI"))
 
 class OCRChain(Chain):
     """
@@ -76,14 +76,40 @@ class OCRChain(Chain):
             
             # 응답 파싱
             raw_response = extract_json_from_string(response.choices[0].message.content)
-            # print(f'raw_response = {raw_response}')
+            print(f'raw_response = {raw_response}')
             return {"ocr_response": raw_response}
         except Exception as e:
             
             return {"ocr_response": f"Error during OpenAI API call: {e}"}
         
-        
-# Custom Chain 정의
+
+class SearchChain(Chain):
+    def __init__(self, tool):
+        super().__init__()
+        self._tool = tool
+
+    @property
+    def input_keys(self):
+        return ["ocr_response"]
+
+    @property
+    def output_keys(self):
+        return ["search_results", "business_name"]
+
+    def _call(self, inputs, **kwargs):
+        business_name = inputs['ocr_response']["상호명"]
+        item = ','.join([x["이름"] for x in inputs['ocr_response']['항목']])
+        print('business_name = ', business_name)
+        print('item = ', item)
+        if len(item) > 0:
+            query = ','.join([business_name, item])
+        else:
+            query = business_name
+        print('query = ', query)
+        search_results = self._tool.func(query)
+        return {"search_results": search_results, "business_name": business_name}
+    
+    
 class CategoryAssistantChain(Chain):
     """
     OpenAI Assistant에 질의하는 사용자 정의 체인.
@@ -105,9 +131,11 @@ class CategoryAssistantChain(Chain):
 
     def _call(self, inputs: Dict[str, str]) -> Dict[str, str]:
         formatted_prompt = self._prompt.format(**inputs)
+        print('ocr_response = ', inputs['ocr_response'])
+        print('business_category = ', inputs['business_category'])
         # OpenAI API 호출
-        thread_id = 'thread_Twa2ruyrfpBGhOqESAnAYn6W'
-        assistant_id = 'asst_7J3TrQfqCaD5dWXZpu7665l5'
+        thread_id = 'thread_tN3lfcgGLhP56xQuwpTPS11L'
+        assistant_id = 'asst_az9m2hNBZWYkpNZiiFELc4Dc'
         message = client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
@@ -123,13 +151,11 @@ class CategoryAssistantChain(Chain):
             run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
         # 결과 메시지 가져오기
         messages = client.beta.threads.messages.list(thread_id=thread_id)
-        # print(f'messages = {messages}')
         # 결과 출력
         for i, message in enumerate(messages):
             if message.role == "assistant":
                 if i == 0:
                     response = message.content[0].text.value
-        # print(f'i = {i}, response = {response}')
-                
-        return {"assistant_response": response}
+        response = response.strip().replace('```','').replace('json','').replace('\n','')
+        return {"assistant_response": response, "business_category": inputs['business_category'], "ocr_response": inputs['ocr_response']}
     
