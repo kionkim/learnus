@@ -13,7 +13,7 @@ from langchain.chains.base import Chain
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 
-from utils import is_pdf_by_signature, encode_image, pdf_to_image, search_with_google_api, add_receipt_to_notion, upload_to_s3, download_file
+from utils import search_with_google_api, add_receipt_to_notion, upload_to_s3, download_file
 from chains import OCRChain, SearchChain, CategoryAssistantChain
 from prompts import assistant_prompt, analysis_prompt
 
@@ -50,6 +50,7 @@ def handle_file_shared(event, say, logger, client):
     image_path = current_path / '../image' / file["name"]
     if download_file(file_url, image_path, SLACK_BOT_TOKEN):
         say(f"파일 '{image_path}'을 성공적으로 다운로드했습니다.")
+        print(f"파일 '{image_path}'을 성공적으로 다운로드했습니다.")
         #####################################
         # langchain으로 정보 처리
         # OCRChain 초기화
@@ -92,8 +93,8 @@ def handle_file_shared(event, say, logger, client):
         try:
             s3_file_url = upload_to_s3(image_path, image_path.name)
             add_receipt_to_notion(result['ocr_response'], s3_file_url, result['business_category'], result['assistant_response'])
-            app.client.chat_postMessage(channel=CHANNEL_ID, text= f"데이터가 성공적으로 Notion에 저장되었습니다.")
-            app.client.chat_postMessage(channel=CHANNEL_ID, text= result['assistant_response'])
+            say(f"데이터가 성공적으로 Notion에 저장되었습니다.")
+            say(result['assistant_response'])
         except Exception as e:
             logger.error(f"Notion에 데이터를 추가하는 중 오류 발생: {e}")
     else:

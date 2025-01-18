@@ -1,6 +1,5 @@
 openai
 python-dotenv
-pdf2image
 slack_sdk
 slack_bolt
 requests
@@ -9,6 +8,7 @@ aiohttp
 notion-client
 awscli
 boto3
+pdf2image
 PyPDF2
 PyPDF
 pdfplumber
